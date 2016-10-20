@@ -126,19 +126,18 @@ void Machine::setint(int index, int data)
     }
 }
 
-int32_t Machine::low_sign_ext(uint32_t x, size_t len)
+int32_t Machine::sign_ext(int32_t x, size_t len)
 {
-    return sign_ext(cat(bit_index((uint64_t)x, 63, 64), bit_index((uint64_t)x, 64-len, 63), len-1), len);
+    /* Bit shift left so that our sign is in the far left bit, then
+     * bit shift back to the right to sign extend the integer */
+    return (x << 32-len) >> 32-len;
 }
 
-uint32_t Machine::cat(uint32_t x1, uint32_t x2, size_t len2)
+int32_t Machine::low_sign_ext(int32_t x, size_t len)
 {
-    return (uint32_t)((x1 << len2) + x2);
-}
-
-int32_t Machine::sign_ext(uint32_t x, size_t len)
-{
-    return (int32_t)bit_index((int64_t)x, 32-len, 32);
+    /* Remove the rightmost bit, then sign extend to the left assuming
+     * the left most bit is len-1 */
+    return sign_ext(x >> 1, len-1);
 }
 
 void print_binary(unsigned char);

@@ -11,3 +11,6 @@ missing
 vm/.deps/
 vm/Makefile
 vm/Makefile.in
+*.o
+vm/paconv
+tags
