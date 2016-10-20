@@ -1,0 +1,5 @@
+AC_INIT([pa-conv], 0.1)
+AM_INIT_AUTOMAKE
+AC_PROG_CXX
+AC_CONFIG_FILES(Makefile vm/Makefile)
+AC_OUTPUT
