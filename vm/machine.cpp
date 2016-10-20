@@ -25,7 +25,7 @@ Machine::Machine()
     }
     /* Get the entry point */
     unsigned char *start = &buff[164];
-    registers[pc] = (start[0] << 24) + (start[1] << 16) + (start[2] << 8) + start[3];
+    pcoqh = (start[0] << 24) + (start[1] << 16) + (start[2] << 8) + start[3];
 
     /* Get the text memory offset */
     unsigned char *offset = &buff[140];
@@ -48,24 +48,24 @@ Machine::Machine()
     
     fclose(exe);
 
-    registers[pcoqt] = registers[pc]+4;
-    start_addr = registers[pc];
+    pcoqt = pcoqh+4;
+    start_addr = pcoqh;
     int stack_base = MEM_LEN - 4;
     
-    registers[sl] = ((stack_base-i)/2)+i; // stack_limit
-    registers[sp] = stack_base;
-    registers[sb] = stack_base;
-    registers[fp] = stack_base;
+    reg[sl] = ((stack_base-i)/2)+i; // stack_limit
+    reg[sp] = stack_base;
+    reg[sb] = stack_base;
+    reg[fp] = stack_base;
 }
 
 int Machine::command_shift_unsigned(int s_bit, int e_bit)
 {
-    return bit_index((uint64_t)getint(registers[pc]), s_bit, e_bit);
+    return bit_index((uint64_t)getint(pcoqh), s_bit, e_bit);
 }
 
 int Machine::command_shift_signed(int s_bit, int e_bit)
 {
-    return bit_index((int64_t)getint(registers[pc]), s_bit, e_bit);
+    return bit_index((int64_t)getint(pcoqh), s_bit, e_bit);
 }
 
 int Machine::bit_index(uint64_t command, int s_bit, int e_bit)
@@ -108,8 +108,8 @@ int Machine::command_operand3()
 
 void Machine::incrementpc()
 {
-    registers[pc] += 4;
-    registers[pcoqt] += 4;
+    pcoqh += 4;
+    pcoqt += 4;
 }
 
 int Machine::getint(int index)
@@ -140,12 +140,17 @@ int32_t Machine::low_sign_ext(int32_t x, size_t len)
     return sign_ext(x >> 1, len-1);
 }
 
+uint64_t Machine::pc()
+{
+    return pcoqh;
+}
+
 void print_binary(unsigned char);
 
 void Machine::command_dump()
 {
     for (int i = 0; i < 4; i++)
-        print_binary(memory[registers[pc]+i]);
+        print_binary(memory[pcoqh+i]);
     cout << endl;
 }
 

@@ -20,6 +20,7 @@ R30 =   SP Stack Pointer to parameters and exit data
 R31 =   receives target branch address in BLE instruction
 */
 static int const REG_LEN = 32;
+static int const SP_REG_LEN = 8;
 static int const MEM_LEN = 5242880;
 static int const BLK_LEN = 400;
 static int const SM_BLK_LEN = 20;
@@ -29,6 +30,8 @@ class Machine
 private:
     Machine();
     static string execname;
+    uint64_t pcoqh = 0; // Program Counter
+    uint64_t pcoqt = 0; // Next instruction
 public:
     unsigned char memory [MEM_LEN];
     int start_addr;
@@ -39,13 +42,11 @@ public:
     int fp = REG_LEN - 5;
 
     /* Special register names */
-    int pc = 33; // pcoqh
-    int pcoqt = 35; // Next instruction
-    int ret0 = 28;
     int sp = 30;
 
     static Machine& getInstance(string);
-    uint32_t registers [REG_LEN];
+    uint32_t reg[REG_LEN];
+    uint32_t sp_reg[SP_REG_LEN];
     int command_shift_unsigned(int, int);
     int command_shift_signed(int, int);
     int command_opcode();
@@ -60,5 +61,6 @@ public:
     int bit_index(int64_t, int, int);
     int32_t low_sign_ext(int32_t, size_t);
     int32_t sign_ext(int32_t, size_t);
+    uint64_t pc();
 };
 
