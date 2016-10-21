@@ -254,16 +254,20 @@ void run(string binary, bool debug)
             uint32_t len = 32 - machine.command_shift_unsigned(27, 32);
             uint32_t p = 31 - machine.command_shift_unsigned(22, 27);
             uint32_t c = machine.command_shift_unsigned(16, 19);
-            if (icode == 2) {
+            if (icode == 2) { // ZERO AND DEPOSIT
                 if (p >= len-1) {
-                    // GR[t] ← cat(0{0..p-len},GR[r]{32-len..31},0{p+1..31});
-                    //if (cond_satisfied) PSW[N] ← 1;
-                }
-            } else if (icode == 7) { // DEPOSIT IMMEDIATE pg. 219
+                    uint32_t t = machine.command_operand1();
+                    uint32_t r = machine.command_operand2();
+                    machine.reg[t] = 0 | ((machine.reg[r] << 32-len) >> 32-len);
+                    if (c != 0)
+                        throw NotImplemented();
+                } else
+                    throw Undefined("ZERO AND DEPOSIT");
+            } else if (icode == 7) { // DEPOSIT IMMEDIATE
                 int32_t ival = machine.low_sign_ext(machine.command_operand2(), 5);
                 if (p >= len-1) {
                     uint32_t t = machine.command_operand1();
-                    machine.reg[machine.command_operand1()] = ((machine.reg[t] << p-len) >> p-len) | ((ival << 32-len) >> 32-len) | ((machine.reg[t] << p+1) >> p+1);
+                    machine.reg[t] = ((machine.reg[t] << p-len) >> p-len) | ((ival << 32-len) >> 32-len) | ((machine.reg[t] << p+1) >> p+1);
                     if (c != 0)
                         throw NotImplemented();
                 } else
