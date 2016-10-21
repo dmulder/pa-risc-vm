@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <memory>
 using namespace std;
+#include "exceptions.h"
+#include "opcode.h"
 
 void hexDump (char*, void*, int);
 
@@ -21,9 +24,9 @@ R31 =   receives target branch address in BLE instruction
 */
 static int const REG_LEN = 32;
 static int const SP_REG_LEN = 8;
-static int const MEM_LEN = 5242880;
 static int const BLK_LEN = 400;
 static int const SM_BLK_LEN = 20;
+static int const STACK_HEAP_LEN = 5242880;
 
 class Machine
 {
@@ -33,13 +36,14 @@ private:
     uint64_t pcoqh = 0; // Program Counter
     uint64_t pcoqt = 0; // Next instruction
 public:
-    unsigned char memory [MEM_LEN];
+    uint8_t *memory;
     int start_addr;
 
     // These need to be fixed
-    int sl = REG_LEN - 2;
-    int sb = REG_LEN - 4;
-    int fp = REG_LEN - 5;
+    //int sl = REG_LEN - 2;
+    //int sb = REG_LEN - 4;
+    //int fp = REG_LEN - 5;
+    uint64_t sb;
 
     /* Special register names */
     int sp = 30;
@@ -49,9 +53,9 @@ public:
     uint32_t sp_reg[SP_REG_LEN];
     int command_shift_unsigned(int, int);
     int command_shift_signed(int, int);
-    int command_opcode();
-    int command_operand1();
-    int command_operand2();
+    uint8_t command_opcode();
+    uint8_t command_operand1();
+    uint8_t command_operand2();
     int command_operand3();
     void incrementpc();
     int getint(int);
@@ -63,4 +67,8 @@ public:
     int32_t sign_ext(int32_t, size_t);
     uint64_t pc();
 };
+
+#define LOG(opcode) { printf("%s:\t", opcode); machine.command_dump(); }
+
+void run(string binary, bool debug);
 

@@ -3,7 +3,7 @@
 #define PROBE       1 // ['PROBER', 'PROBERI', 'PROBEW', 'PROBEWI', 'LPA,cmplt', 'LCI', 'PDTLB,cmplt', 'PITLB,cmplt', 'PDTLBE,cmplt', 'PITLBE,cmplt', 'IDTLBA', 'IITLBA', 'IDTLBP', 'IITLBP', 'PDC,cmplt', 'FDC,cmplt', 'FIC,cmplt', 'FDCE,cmplt', 'FICE,cmplt']
 #define ADD         2 // ['ADD,cond', 'ADDL,cond', 'ADDO,cond', 'ADDC,cond', 'ADDCO,cond', 'SH1ADD,cond', 'SH1ADDL,cond', 'SH1ADDO,cond', 'SH2ADD,cond', 'SH2ADDL,cond', 'SH2ADDO,cond', 'SH3ADD,cond', 'SH3ADDL,cond', 'SH3ADDO,cond', 'SUB,cond', 'SUBO,cond', 'SUBB,cond', 'SUBBO,cond', 'SUBT,cond', 'SUBTO,cond', 'DS,cond', 'COMCLR,cond', 'OR,cond', 'XOR,cond', 'AND,cond', 'ANDCM,cond', 'UXOR,cond', 'UADDCM,cond', 'UADDCMT,cond', 'DCOR,cond', 'IDCOR,cond']
 #define LDST        3 // ['LDWX,cmplt,cc', 'LDHX,cmplt,cc', 'LDBX,cmplt,cc', 'LDWAX,cmplt,cc', 'LDCWX,cmplt,cc', 'LDWS,cmplt,cc', 'LDHS,cmplt,cc', 'LDBS,cmplt,cc', 'LDWAS,cmplt,cc', 'LDCWS,cmplt,cc', 'STWS,cmplt,cc', 'STHS,cmplt,cc', 'STBS,cmplt,cc', 'STWAS,cmplt,cc', 'STBYS,cmplt,cc']
-#define DEBUG       4 // ['DEBUGID', 'MFDBAM', 'MFDBAO', 'MFIBAM', 'MFIBAO', 'MTDBAM', 'MTDBAO', 'MTIBAM', 'MTIBAO']
+#define _DEBUG       4 // ['DEBUGID', 'MFDBAM', 'MFDBAO', 'MFIBAM', 'MFIBAO', 'MTDBAM', 'MTDBAO', 'MTIBAM', 'MTIBAO']
 #define DIAG        5
 #define FMPYADD     6
 #define LDIL        8

@@ -1,4 +1,5 @@
 #include "machine.h"
+#include <sys/stat.h>
 
 string Machine::execname;
 
@@ -13,6 +14,13 @@ Machine::Machine()
     // Load the file into memory and set start, stack limit, and base
     FILE *exe;
     const char * c_filename = Machine::execname.c_str();
+    struct stat finfo;
+    if (stat(c_filename, &finfo) != 0) {
+        throw ExeNotFound();
+    }
+    unsigned int mem_len = finfo.st_size + STACK_HEAP_LEN;
+    memory = (uint8_t*)malloc(mem_len);
+
     exe = fopen(c_filename, "r");
 
     int i = 0;
@@ -40,7 +48,7 @@ Machine::Machine()
         memory[i] = (unsigned char) result;
         result = getc(exe);
         i++;
-        if (i >= MEM_LEN) {
+        if (i >= mem_len) {
             cout << "Stack Overflow while loading binary into memory!";
             throw 10;
         }
@@ -50,12 +58,11 @@ Machine::Machine()
 
     pcoqt = pcoqh+4;
     start_addr = pcoqh;
-    int stack_base = MEM_LEN - 4;
+    int stack_base = mem_len - 4;
     
-    reg[sl] = ((stack_base-i)/2)+i; // stack_limit
+    //reg[sl] = ((stack_base-i)/2)+i; // stack_limit
     reg[sp] = stack_base;
-    reg[sb] = stack_base;
-    reg[fp] = stack_base;
+    sb = stack_base;
 }
 
 int Machine::command_shift_unsigned(int s_bit, int e_bit)
@@ -86,19 +93,19 @@ int Machine::bit_index(int64_t command, int s_bit, int e_bit)
     return command;
 }
 
-int Machine::command_opcode()
+uint8_t Machine::command_opcode()
 {
-    return (int) command_shift_unsigned(0, 6);
+    return command_shift_unsigned(0, 6);
 }
 
-int Machine::command_operand1()
+uint8_t Machine::command_operand1()
 {
-    return (int) command_shift_unsigned(6, 11);
+    return command_shift_unsigned(6, 11);
 }
 
-int Machine::command_operand2()
+uint8_t Machine::command_operand2()
 {
-    return (int) command_shift_unsigned(11, 16);
+    return command_shift_unsigned(11, 16);
 }
 
 int Machine::command_operand3()
@@ -110,6 +117,9 @@ void Machine::incrementpc()
 {
     pcoqh += 4;
     pcoqt += 4;
+    /* Check for stack overflow */
+    if (reg[sp] < sb-(STACK_HEAP_LEN/2))
+        throw StackOverflow();
 }
 
 int Machine::getint(int index)
@@ -204,3 +214,65 @@ void hexDump (char *desc, void *addr, int len) {
     // And print the final ASCII bit.
     printf ("  %s\n", buff);
 }
+
+void run(string binary, bool debug)
+{    
+    Machine machine = Machine::getInstance(binary);
+    
+    while (true) {
+        uint8_t opcode = machine.command_opcode();
+        if (opcode == ADD) {
+            if (debug) LOG("ADD")
+            machine.reg[machine.command_shift_unsigned(27, 32)] = machine.reg[machine.command_operand1()] + machine.reg[machine.command_operand2()];
+            machine.incrementpc();
+        } else if (opcode == LDIL) {
+            if (debug) LOG("LDIL")
+            int answer;
+            int first = machine.command_shift_signed(11, 16) << 13;
+            int second = machine.command_shift_unsigned(18, 31);
+            if (first < 0)
+                answer = first - second;
+            else
+                answer = first + second;
+            machine.reg[machine.command_operand1()] = answer;
+            machine.incrementpc();
+        } else if (opcode == LDO) {
+            if (debug) LOG("LDO")
+            machine.reg[machine.command_operand2()] = machine.reg[machine.command_operand1()] + machine.command_operand3();
+            machine.incrementpc();
+        } else if (opcode == LDW) {
+            if (debug) LOG("LDW")
+            machine.reg[machine.command_operand2()] = machine.getint(machine.reg[machine.command_operand1()] + machine.command_operand3());
+            machine.incrementpc();
+        } else if (opcode == STW) {
+            if (debug) LOG("STW")
+            machine.setint(machine.reg[machine.command_operand1()] + machine.command_operand3(), machine.reg[machine.command_operand2()]);
+            machine.incrementpc();
+        } else if (opcode == DEP) {
+            if (debug) LOG("DEP")
+            uint32_t icode = machine.command_shift_unsigned(19, 22);
+            uint32_t len = 32 - machine.command_shift_unsigned(27, 32);
+            uint32_t p = 31 - machine.command_shift_unsigned(22, 27);
+            uint32_t c = machine.command_shift_unsigned(16, 19);
+            if (icode == 2) {
+                if (p >= len-1) {
+                    // GR[t] ← cat(0{0..p-len},GR[r]{32-len..31},0{p+1..31});
+                    //if (cond_satisfied) PSW[N] ← 1;
+                }
+            } else if (icode == 7) { // DEPOSIT IMMEDIATE pg. 219
+                int32_t ival = machine.low_sign_ext(machine.command_operand2(), 5);
+                if (p >= len-1) {
+                    uint32_t t = machine.command_operand1();
+                    machine.reg[machine.command_operand1()] = ((machine.reg[t] << p-len) >> p-len) | ((ival << 32-len) >> 32-len) | ((machine.reg[t] << p+1) >> p+1);
+                    if (c != 0)
+                        throw NotImplemented();
+                } else
+                    throw Undefined("DEPOSIT IMMEDIATE");
+            } else
+                throw UnrecognizedIcodeInstruction(icode, machine.pc());
+            machine.incrementpc();
+        } else
+            throw UnrecognizedInstruction(opcode, machine.pc());
+    }
+}
+
