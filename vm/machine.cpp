@@ -1,5 +1,4 @@
 #include "machine.h"
-#include <sys/stat.h>
 
 string Machine::execname;
 
@@ -65,52 +64,42 @@ Machine::Machine()
     sb = stack_base;
 }
 
-int Machine::command_shift_unsigned(int s_bit, int e_bit)
+uint32_t Machine::command_shift_unsigned(int s_bit, int e_bit)
 {
-    return bit_index((uint64_t)getint(pcoqh), s_bit, e_bit);
+    return bit_index(getint(pcoqh), s_bit, e_bit);
 }
 
-int Machine::command_shift_signed(int s_bit, int e_bit)
+int32_t Machine::command_shift_signed(int s_bit, int e_bit)
 {
-    return bit_index((int64_t)getint(pcoqh), s_bit, e_bit);
+    return sign_ext(bit_index(getint(pcoqh), s_bit, e_bit), e_bit-s_bit);
 }
 
-int Machine::bit_index(uint64_t command, int s_bit, int e_bit)
+/* Are these calculations faster, or is bit shifting faster? */
+uint32_t Machine::bit_index(uint32_t command, int s_bit, int e_bit)
 {
-    s_bit = s_bit + 32;
-    e_bit = 32 - e_bit;
-    command = command << s_bit;
-    command = command >> e_bit+s_bit;
-    return command;
-}
-
-int Machine::bit_index(int64_t command, int s_bit, int e_bit)
-{
-    s_bit = s_bit + 32;
-    e_bit = 32 - e_bit;
-    command = command << s_bit;
-    command = command >> e_bit+s_bit;
-    return command;
+    s_bit = 31 - e_bit;
+    e_bit = 31 - s_bit;
+    return ((uint32_t)((pow(2, e_bit)-1)-(pow(2, s_bit)-1)) & command) >> s_bit;
 }
 
 uint8_t Machine::command_opcode()
 {
-    return command_shift_unsigned(0, 6);
+    return command_shift_unsigned(0, 5);
 }
 
 uint8_t Machine::command_operand1()
 {
-    return command_shift_unsigned(6, 11);
+    return command_shift_unsigned(6, 10);
 }
 
 uint8_t Machine::command_operand2()
 {
-    return command_shift_unsigned(11, 16);
+    return command_shift_unsigned(11, 15);
 }
 
 int Machine::command_operand3()
 {
-    return (int) command_shift_signed(18, 31);
+    return (int) command_shift_signed(18, 30);
 }
 
 void Machine::incrementpc()
@@ -122,7 +111,7 @@ void Machine::incrementpc()
         throw StackOverflow();
 }
 
-int Machine::getint(int index)
+uint32_t Machine::getint(int index)
 {
     return (memory[index] << 24) + (memory[index+1] << 16) + (memory[index+2] << 8) + memory[index+3];
 }
@@ -223,13 +212,13 @@ void run(string binary, bool debug)
         uint8_t opcode = machine.command_opcode();
         if (opcode == ADD) {
             if (debug) LOG("ADD")
-            machine.reg[machine.command_shift_unsigned(27, 32)] = machine.reg[machine.command_operand1()] + machine.reg[machine.command_operand2()];
+            machine.reg[machine.command_shift_unsigned(27, 31)] = machine.reg[machine.command_operand1()] + machine.reg[machine.command_operand2()];
             machine.incrementpc();
         } else if (opcode == LDIL) {
             if (debug) LOG("LDIL")
             int answer;
             int first = machine.command_shift_signed(11, 16) << 13;
-            int second = machine.command_shift_unsigned(18, 31);
+            int second = machine.command_shift_unsigned(18, 30);
             if (first < 0)
                 answer = first - second;
             else
@@ -250,10 +239,10 @@ void run(string binary, bool debug)
             machine.incrementpc();
         } else if (opcode == DEP) {
             if (debug) LOG("DEP")
-            uint32_t icode = machine.command_shift_unsigned(19, 22);
-            uint32_t len = 32 - machine.command_shift_unsigned(27, 32);
-            uint32_t p = 31 - machine.command_shift_unsigned(22, 27);
-            uint32_t c = machine.command_shift_unsigned(16, 19);
+            uint32_t icode = machine.command_shift_unsigned(19, 21);
+            uint32_t len = 32 - machine.command_shift_unsigned(27, 31);
+            uint32_t p = 31 - machine.command_shift_unsigned(22, 26);
+            uint32_t c = machine.command_shift_unsigned(16, 18);
             if (icode == 2) { // ZERO AND DEPOSIT
                 if (p >= len-1) {
                     uint32_t t = machine.command_operand1();
@@ -275,8 +264,16 @@ void run(string binary, bool debug)
             } else
                 throw UnrecognizedIcodeInstruction(icode, machine.pc());
             machine.incrementpc();
-        } else
+        } else if (opcode == LDST) {
+            if (debug) LOG("LDST")
+            uint8_t icode = machine.command_shift_unsigned(23, 26);
+            uint8_t iicode = machine.command_shift_unsigned(19, 19);
+            throw NotImplemented();
+            machine.incrementpc();
+        } else {
+            machine.command_dump();
             throw UnrecognizedInstruction(opcode, machine.pc());
+        }
     }
 }
 

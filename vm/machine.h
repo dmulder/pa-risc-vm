@@ -1,5 +1,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <cmath>
 #include <string>
 #include <iostream>
 #include <memory>
@@ -51,18 +53,17 @@ public:
     static Machine& getInstance(string);
     uint32_t reg[REG_LEN];
     uint32_t sp_reg[SP_REG_LEN];
-    int command_shift_unsigned(int, int);
+    uint32_t command_shift_unsigned(int, int);
     int command_shift_signed(int, int);
     uint8_t command_opcode();
     uint8_t command_operand1();
     uint8_t command_operand2();
     int command_operand3();
     void incrementpc();
-    int getint(int);
+    uint32_t getint(int);
     void setint(int, int);
     void command_dump();
-    int bit_index(uint64_t, int, int);
-    int bit_index(int64_t, int, int);
+    uint32_t bit_index(uint32_t, int, int);
     int32_t low_sign_ext(int32_t, size_t);
     int32_t sign_ext(int32_t, size_t);
     uint64_t pc();
