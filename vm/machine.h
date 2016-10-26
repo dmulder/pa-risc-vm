@@ -58,7 +58,6 @@ public:
     uint8_t command_opcode();
     uint8_t command_operand1();
     uint8_t command_operand2();
-    int command_operand3();
     void incrementpc();
     uint32_t getint(int);
     void setint(int, int);

@@ -74,32 +74,26 @@ int32_t Machine::command_shift_signed(int s_bit, int e_bit)
     return sign_ext(bit_index(getint(pcoqh), s_bit, e_bit), e_bit-s_bit);
 }
 
-/* Are these calculations faster, or is bit shifting faster? */
 uint32_t Machine::bit_index(uint32_t command, int s_bit, int e_bit)
 {
-    s_bit = 31 - e_bit;
-    e_bit = 31 - s_bit;
-    return ((uint32_t)((pow(2, e_bit)-1)-(pow(2, s_bit)-1)) & command) >> s_bit;
+    return (command & (((1 << e_bit+1)-1) - ((1 << s_bit)-1))) >> s_bit;
+    /* AND the command with the bitmask range from s_bit to e_bit, then bit
+     * shift the result to the beginning */
 }
 
 uint8_t Machine::command_opcode()
 {
-    return command_shift_unsigned(0, 5);
+    return command_shift_unsigned(26, 31);
 }
 
 uint8_t Machine::command_operand1()
 {
-    return command_shift_unsigned(6, 10);
+    return command_shift_unsigned(21, 25);
 }
 
 uint8_t Machine::command_operand2()
 {
-    return command_shift_unsigned(11, 15);
-}
-
-int Machine::command_operand3()
-{
-    return (int) command_shift_signed(18, 30);
+    return command_shift_unsigned(16, 20);
 }
 
 void Machine::incrementpc()
@@ -212,13 +206,13 @@ void run(string binary, bool debug)
         uint8_t opcode = machine.command_opcode();
         if (opcode == ADD) {
             if (debug) LOG("ADD")
-            machine.reg[machine.command_shift_unsigned(27, 31)] = machine.reg[machine.command_operand1()] + machine.reg[machine.command_operand2()];
+            machine.reg[machine.command_shift_unsigned(0, 4)] = machine.reg[machine.command_operand1()] + machine.reg[machine.command_operand2()];
             machine.incrementpc();
         } else if (opcode == LDIL) {
             if (debug) LOG("LDIL")
             int answer;
-            int first = machine.command_shift_signed(11, 16) << 13;
-            int second = machine.command_shift_unsigned(18, 30);
+            int first = machine.command_shift_signed(15, 20) << 13;
+            int second = machine.command_shift_unsigned(1, 13);
             if (first < 0)
                 answer = first - second;
             else
@@ -227,22 +221,22 @@ void run(string binary, bool debug)
             machine.incrementpc();
         } else if (opcode == LDO) {
             if (debug) LOG("LDO")
-            machine.reg[machine.command_operand2()] = machine.reg[machine.command_operand1()] + machine.command_operand3();
+            machine.reg[machine.command_operand2()] = machine.reg[machine.command_operand1()] + machine.command_shift_unsigned(16, 20);
             machine.incrementpc();
         } else if (opcode == LDW) {
             if (debug) LOG("LDW")
-            machine.reg[machine.command_operand2()] = machine.getint(machine.reg[machine.command_operand1()] + machine.command_operand3());
+            machine.reg[machine.command_operand2()] = machine.getint(machine.reg[machine.command_operand1()] + machine.command_shift_unsigned(16, 20));
             machine.incrementpc();
         } else if (opcode == STW) {
             if (debug) LOG("STW")
-            machine.setint(machine.reg[machine.command_operand1()] + machine.command_operand3(), machine.reg[machine.command_operand2()]);
+            machine.setint(machine.reg[machine.command_operand1()] + machine.command_shift_unsigned(16, 20), machine.reg[machine.command_operand2()]);
             machine.incrementpc();
         } else if (opcode == DEP) {
             if (debug) LOG("DEP")
-            uint32_t icode = machine.command_shift_unsigned(19, 21);
-            uint32_t len = 32 - machine.command_shift_unsigned(27, 31);
-            uint32_t p = 31 - machine.command_shift_unsigned(22, 26);
-            uint32_t c = machine.command_shift_unsigned(16, 18);
+            uint32_t icode = machine.command_shift_unsigned(10, 12);
+            uint32_t len = 32 - machine.command_shift_unsigned(0, 4);
+            uint32_t p = 31 - machine.command_shift_unsigned(5, 9);
+            uint32_t c = machine.command_shift_unsigned(13, 15);
             if (icode == 2) { // ZERO AND DEPOSIT
                 if (p >= len-1) {
                     uint32_t t = machine.command_operand1();
@@ -266,8 +260,6 @@ void run(string binary, bool debug)
             machine.incrementpc();
         } else if (opcode == LDST) {
             if (debug) LOG("LDST")
-            uint8_t icode = machine.command_shift_unsigned(23, 26);
-            uint8_t iicode = machine.command_shift_unsigned(19, 19);
             throw NotImplemented();
             machine.incrementpc();
         } else {
