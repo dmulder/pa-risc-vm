@@ -24,6 +24,9 @@ int main (int argc, char *argv[])
     } catch (UnrecognizedIcodeInstruction e) {
         cout << e.what();
         return 3;
+    } catch (NotImplemented e) {
+        cout << e.what();
+        return 4;
     }
 
     return 0;

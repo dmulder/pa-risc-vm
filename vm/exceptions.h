@@ -34,25 +34,28 @@ class UnrecognizedIcodeInstruction : exception
 
 class NotImplemented : exception
 {
+    public:
     const char* what() const throw ()
     {
-        return "The request instruction is not implemented";
+        return "The requested instruction is not implemented\n";
     }
 };
 
 class ExeNotFound : exception
 {
+    public:
     const char* what() const throw ()
     {
-        return "The specified executable was not found";
+        return "The specified executable was not found\n";
     }
 };
 
 class StackOverflow : exception
 {
+    public:
     const char* what() const throw ()
     {
-        return "A stack overflow was detected";
+        return "A stack overflow was detected\n";
     }
 };
 
